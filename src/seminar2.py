@@ -5,7 +5,6 @@ import os.path
 import numpy as np
 from src.test_utils import get_preprocessed_data, visualize_weights, visualize_loss
 
-
 def softmax(Z: np.array) -> np.array:
     """
     TODO 1:
@@ -13,8 +12,9 @@ def softmax(Z: np.array) -> np.array:
     :param Z: 2D array, shape (N, C)
     :return: softmax 2D array, shape (N, C)
     """
-    return Z
-
+    # Implement softmax along axis -1 (row-wise)
+    e_Z = np.exp(Z - np.max(Z, axis=-1, keepdims=True))
+    return e_Z / np.sum(e_Z, axis=-1, keepdims=True)
 
 def softmax_loss_and_grad(W: np.array, X: np.array, y: np.array, reg: float) -> tuple:
     """
@@ -29,21 +29,37 @@ def softmax_loss_and_grad(W: np.array, X: np.array, y: np.array, reg: float) -> 
     """
     loss = 0.0
     dL_dW = np.zeros_like(W)
-    # *****START OF YOUR CODE*****
+    
+    # Number of training examples
+    N = X.shape[0]
+    
     # 1. Forward pass, compute loss as sum of data loss and regularization loss [sum(W ** 2)]
-
+    scores = X @ W
+    probs = softmax(scores)
+    
+    # Calculate the data loss
+    correct_class_probs = probs[np.arange(N), y]
+    data_loss = -np.log(correct_class_probs).sum() / N
+    
+    # Calculate the regularization loss
+    reg_loss = 0.5 * reg * np.sum(W * W)
+    
+    # Total loss
+    loss = data_loss + reg_loss
+    
     # 2. Backward pass, compute intermediate dL/dZ
-
+    dscores = probs.copy()
+    dscores[np.arange(N), y] -= 1
+    dscores /= N
+    
     # 3. Compute data gradient dL/dW
-
+    dL_dW = X.T @ dscores
+    
     # 4. Compute regularization gradient
-
-    # 5. Return loss and sum of data + reg gradients
-
-    # *****END OF YOUR CODE*****
-
+    dL_dW += reg * W
+    
+    # 5. Return loss and gradient
     return loss, dL_dW
-
 
 class SoftmaxClassifier:
     def __init__(self):
@@ -87,10 +103,11 @@ class SoftmaxClassifier:
             # Hint: Use np.random.choice to generate batch_indices. Sampling with   #
             # replacement is faster than sampling without replacement.              #
             #########################################################################
-            # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+            # Generate random batch indices
+            batch_indices = np.random.choice(num_train, batch_size, replace=True)
+            X_batch = X[batch_indices]
+            y_batch = y[batch_indices]
+            
             # evaluate loss and gradient
             loss, grad = softmax_loss_and_grad(self.W, X_batch, y_batch, reg)
             loss_history.append(loss)
@@ -100,9 +117,9 @@ class SoftmaxClassifier:
             # TODO 4:                                                               #
             # Update the weights using the gradient and the learning rate.          #
             #########################################################################
-            # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-            # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+            # Update weights with gradient descent
+            self.W -= learning_rate * grad
+            
             if it % 100 == 0:
                 if verbose:
                     print(f'iteration {it} / {num_iters}: loss {loss:.3f} ')
@@ -126,18 +143,16 @@ class SoftmaxClassifier:
         accuracy = np.mean(y_predicted == y)
         return accuracy
 
-
 def train():
     # TODO 5: Find the best hyperparameters
     # assert test accuracy > 0.22
     # weights images must look like in lecture slides
 
-    # ***** START OF YOUR CODE *****
-    learning_rate = 0
-    reg = 0
-    num_iters = 0
-    batch_size = 0
-    # ******* END OF YOUR CODE ************
+    # Set hyperparameters
+    learning_rate = 1e-3
+    reg = 1e-1
+    num_iters = 10000
+    batch_size = 64
 
     (x_train, y_train), (x_test, y_test) = get_preprocessed_data()
     cls = SoftmaxClassifier()
@@ -171,7 +186,6 @@ Test accuracy: {cls.evaluate(x_test, y_test)}
         f.write(report)
     visualize_weights(cls, out_dir)
     visualize_loss(loss_history, out_dir)
-
 
 if __name__ == '__main__':
     train()
