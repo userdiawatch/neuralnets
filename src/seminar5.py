@@ -46,7 +46,6 @@ def build_pooling_layer() -> tf.keras.layers.MaxPooling2D:
     return my_layer
 
 
-
 def build_up_conv_layer() -> tf.keras.layers.Conv2DTranspose:
     """Build Transpose Convolution layer"""
     my_layer = tf.keras.layers.Conv2DTranspose(filters=4, kernel_size=3, strides=2)
