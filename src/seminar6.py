@@ -87,7 +87,7 @@ def train():
     print('Training model')
 
     image_size = (180, 180)
-    batch_size = 128
+    batch_size = 256
 
     train_ds, val_ds = keras.utils.image_dataset_from_directory(
         "./data/raw/cats_dogs_train/PetImages",
